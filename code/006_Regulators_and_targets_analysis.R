@@ -57,15 +57,16 @@ gint_int %>%
             vjust = -0.5,
             size = 5) +
   labs(title = "Genes of interest interactions distribution",
+       subtitle = "Detected targets and regulators",
        x = "Genes of interest",
        y = "count") +
   scale_fill_viridis_d(option = "C") +
   coord_cartesian(clip = "off")
 ggsave("plots/006_Interactions_distributions.png", h = 1600, w = 2400, units = "px")
 
-# Plot FC of the targets and regulators of the selected genes
+## Plot FC of the targets and regulators of the selected genes
 # First we have to take into account that there might be discordant evidences
-# for a seconadry gene (being either a regulator or a target) effect on one of
+# for a secondary gene (being either a regulator or a target) effect on one of
 # the primary genes. We choose the correct interaction by selecting the one
 # that has most reported Interaction_type. If the score is even we select the 
 # "enhanceable" interaction
@@ -97,14 +98,14 @@ for(i in unique(gint_fc$primary)){
      ggplot(aes(secondary, fc, fill = contrast)) +
      geom_bar(stat = "identity", position = "dodge", color = "black", alpha = 0.8) +
      labs(title = paste0(i, " targets log2FC"),
-         y = "Target gene",
-         x = "log2FoldChange") +
+         x = "Target gene",
+         y = "log2FoldChange") +
      coord_flip() +
      scale_fill_manual(values = c("lmax_hmyc_vs_neg" = "#153AE0",
                                  "lmax_vs_neg" = "#A2B1F6"),
                       labels = c("LowMaxHighMyc vs Neg", "LowMax vs Neg")) +
      theme_light()
-  ggsave(paste0("plots/011_", i, "_targets.png"), h = 2000, w = 2500, units = "px")
+  ggsave(paste0("plots/011_", i, "_targets.png"), h = 1500, w = 2000, units = "px")
   
   # Same plot for the regulators of the genes of interest
   gint_fc_tar <- gint_fc %>% 
@@ -116,75 +117,75 @@ for(i in unique(gint_fc$primary)){
     ggplot(aes(secondary, fc, fill = contrast)) +
     geom_bar(stat = "identity", position = "dodge", color = "black", alpha = 0.8) +
     labs(title = paste0(i, " regulators log2FC"),
-         y = "Regulator gene",
-         x = "log2FoldChange") +
+         x = "Regulator gene",
+         y = "log2FoldChange") +
     coord_flip() +
     scale_fill_manual(values = c("lmax_hmyc_vs_neg" = "#FB690E",
                                  "lmax_vs_neg" = "#FDC09B"),
                       labels = c("LowMaxHighMyc vs Neg", "LowMax vs Neg")) +
     theme_light()
-  ggsave(paste0("plots/011_", i, "_regulators.png"), h = 2000, w = 2500, units = "px")
+  ggsave(paste0("plots/011_", i, "_regulators.png"), h = 1500, w = 2000, units = "px")
   
   # Mosaic plots and Fisher exact test
   # The fcs look to be higher when the regulation is positive when myc is 
   # overexpressed and lower when the regulation is negative, compared to Low Max
-  reg_mos <- gint_fc_reg %>% 
-    filter(!(mean_fc == 0), !(padj > 0.05)) %>% 
-    select(primary, secondary, mean_fc, contrast, fc) %>% 
-    pivot_wider(names_from = contrast, values_from = fc) %>% 
-    filter(!if_any(starts_with("lmax"), is.na)) %>% 
-    mutate(obs_regulation = ifelse(mean_fc > 0, "positive", "negative")) %>% 
-    mutate(HMyc_greater = lmax_hmyc_vs_neg > lmax_vs_neg) 
-  
-  if(nrow(reg_mos) > 0){
-    
-  pos_hmyc_greater <- reg_mos %>% filter(obs_regulation == "positive") %>% pull(HMyc_greater) %>% sum()
-  pos_hmyc_smaller <- nrow(filter(reg_mos, obs_regulation == "positive")) - pos_hmyc_greater
-  neg_hmyc_greater <- sum(reg_mos[reg_mos$obs_regulation == "negative",]$HMyc_greater == TRUE)
-  neg_hmyc_smaller <- nrow(filter(reg_mos, obs_regulation == "negative")) - neg_hmyc_greater
-  
-  mos <- data.frame(row.names = c("Positive", "Negative"),
-                "HMyc_greater" =  c(pos_hmyc_greater, neg_hmyc_greater),
-                "HMyc_smaller" = c(pos_hmyc_smaller, neg_hmyc_smaller)) 
-  fet <- fisher.test(mos)
-  png(paste0("plots/011_", i, "_mosaic_targets.png"), h = 1800, w = 1800, res = 300)
-  mosaicplot(mos, 
-             main = paste0(i, " targets regulation"),
-             color = TRUE,
-             cex.axis = 1)
-  mtext(side=3, paste0("FET p = ", round(fet$p.value, 3)))
-  dev.off()
-  }
-  
-  # Mosaic plots for regulators
-  tar_mos <- gint_fc_tar %>% 
-    filter(!(mean_fc == 0), !(padj > 0.05)) %>% 
-    select(primary, secondary, mean_fc, contrast, fc) %>% 
-    pivot_wider(names_from = contrast, values_from = fc) %>% 
-    filter(!if_any(starts_with("lmax"), is.na)) %>% 
-    mutate(obs_regulation = ifelse(mean_fc > 0, "positive", "negative")) %>% 
-    mutate(HMyc_greater = lmax_hmyc_vs_neg > lmax_vs_neg) 
-  
-  if(nrow(tar_mos) > 0){
-    
-    pos_hmyc_greater <- tar_mos %>% filter(obs_regulation == "positive") %>% pull(HMyc_greater) %>% sum()
-    pos_hmyc_smaller <- nrow(filter(tar_mos, obs_regulation == "positive")) - pos_hmyc_greater
-    neg_hmyc_greater <- sum(tar_mos[tar_mos$obs_regulation == "negative",]$HMyc_greater == TRUE)
-    neg_hmyc_smaller <- nrow(filter(tar_mos, obs_regulation == "negative")) - neg_hmyc_greater
-    
-    
-    mos <- data.frame(row.names = c("Positive", "Negative"),
-                      "HMyc_greater" =  c(pos_hmyc_greater, neg_hmyc_greater),
-                      "HMyc_smaller" = c(pos_hmyc_smaller, neg_hmyc_smaller)) 
-    fet <- fisher.test(mos)
-    png(paste0("plots/011_", i, "_mosaic_regulators.png"), h = 1800, w = 1800, res = 300)
-    mosaicplot(mos, 
-               main = paste0(i, " regulators expression profiles"),
-               color = TRUE,
-               cex.axis = 1)
-    mtext(side=3, paste0("FET p = ", round(fet$p.value, 3)))
-    dev.off()
-  }
+  # reg_mos <- gint_fc_reg %>% 
+  #   filter(!(mean_fc == 0), !(padj > 0.05)) %>% 
+  #   select(primary, secondary, mean_fc, contrast, fc) %>% 
+  #   pivot_wider(names_from = contrast, values_from = fc) %>% 
+  #   filter(!if_any(starts_with("lmax"), is.na)) %>% 
+  #   mutate(obs_regulation = ifelse(mean_fc > 0, "positive", "negative")) %>% 
+  #   mutate(HMyc_greater = lmax_hmyc_vs_neg > lmax_vs_neg) 
+  # 
+  # if(nrow(reg_mos) > 0){
+  #   
+  # pos_hmyc_greater <- reg_mos %>% filter(obs_regulation == "positive") %>% pull(HMyc_greater) %>% sum()
+  # pos_hmyc_smaller <- nrow(filter(reg_mos, obs_regulation == "positive")) - pos_hmyc_greater
+  # neg_hmyc_greater <- sum(reg_mos[reg_mos$obs_regulation == "negative",]$HMyc_greater == TRUE)
+  # neg_hmyc_smaller <- nrow(filter(reg_mos, obs_regulation == "negative")) - neg_hmyc_greater
+  # 
+  # mos <- data.frame(row.names = c("Positive", "Negative"),
+  #               "HMyc_greater" =  c(pos_hmyc_greater, neg_hmyc_greater),
+  #               "HMyc_smaller" = c(pos_hmyc_smaller, neg_hmyc_smaller)) 
+  # fet <- fisher.test(mos)
+  # png(paste0("plots/011_", i, "_mosaic_targets.png"), h = 1800, w = 1800, res = 300)
+  # mosaicplot(mos, 
+  #            main = paste0(i, " targets regulation"),
+  #            color = TRUE,
+  #            cex.axis = 1)
+  # mtext(side=3, paste0("FET p = ", round(fet$p.value, 3)))
+  # dev.off()
+  # }
+  # 
+  # # Mosaic plots for regulators
+  # tar_mos <- gint_fc_tar %>% 
+  #   filter(!(mean_fc == 0), !(padj > 0.05)) %>% 
+  #   select(primary, secondary, mean_fc, contrast, fc) %>% 
+  #   pivot_wider(names_from = contrast, values_from = fc) %>% 
+  #   filter(!if_any(starts_with("lmax"), is.na)) %>% 
+  #   mutate(obs_regulation = ifelse(mean_fc > 0, "positive", "negative")) %>% 
+  #   mutate(HMyc_greater = lmax_hmyc_vs_neg > lmax_vs_neg) 
+  # 
+  # if(nrow(tar_mos) > 0){
+  #   
+  #   pos_hmyc_greater <- tar_mos %>% filter(obs_regulation == "positive") %>% pull(HMyc_greater) %>% sum()
+  #   pos_hmyc_smaller <- nrow(filter(tar_mos, obs_regulation == "positive")) - pos_hmyc_greater
+  #   neg_hmyc_greater <- sum(tar_mos[tar_mos$obs_regulation == "negative",]$HMyc_greater == TRUE)
+  #   neg_hmyc_smaller <- nrow(filter(tar_mos, obs_regulation == "negative")) - neg_hmyc_greater
+  #   
+  #   
+  #   mos <- data.frame(row.names = c("Positive", "Negative"),
+  #                     "HMyc_greater" =  c(pos_hmyc_greater, neg_hmyc_greater),
+  #                     "HMyc_smaller" = c(pos_hmyc_smaller, neg_hmyc_smaller)) 
+  #   fet <- fisher.test(mos)
+  #   png(paste0("plots/011_", i, "_mosaic_regulators.png"), h = 1800, w = 1800, res = 300)
+  #   mosaicplot(mos, 
+  #              main = paste0(i, " regulators expression profiles"),
+  #              color = TRUE,
+  #              cex.axis = 1)
+  #   mtext(side=3, paste0("FET p = ", round(fet$p.value, 3)))
+  #   dev.off()
+  # }
   
 }
 

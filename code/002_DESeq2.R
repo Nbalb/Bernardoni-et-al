@@ -212,7 +212,7 @@ dev.off()
 sapply(shrRes, summary)
 
 # Plot gene counts
-map(seq(1:length(shrRes)), function(i, ngenes = 4){
+best_list <- map(seq(1:length(shrRes)), function(i, ngenes = 4){
   
   res <- shrRes[[i]] %>% 
     as.data.frame() %>% 
@@ -253,12 +253,13 @@ map(seq(1:length(shrRes)), function(i, ngenes = 4){
        print(p)
       
       dev.off()
+      best
 })
 
 
 
 # Plot best scoring genes
-source("code/functions/p_star.R")
+source("code/p_star.R")
 map(seq(1:length(shrRes)), function(i, ngenes = 10){
 
   ends <- shrRes[[i]] %>%
@@ -313,17 +314,24 @@ library(EnhancedVolcano)
 map(seq(1:length(shrRes)), function(i){
   
   name <- names(shrRes)[i]
-  plotres <- shrRes[[i]] %>% as.data.frame() %>% rownames_to_column()
-  goi <- c("Antp", "ftz", "nub", "sd", "vg", "pros")
+  plotres <- shrRes[[i]] %>% 
+    as.data.frame() %>% 
+    mutate(padj = ifelse(padj < 1e-50, 1e-50, padj),
+           pvalue = padj,
+           log2FoldChange = ifelse(log2FoldChange < -8, -8, ifelse(
+             log2FoldChange > 8, 8, log2FoldChange
+           ))) %>% 
+    rownames_to_column()
+  goi <- c("Antp", "ftz", "nub", "sd", "vg", "pros", "Myc", "Max", "ana", "elav", "retn",
+           best_list[[i]] %>% pull(gene_name) %>% unique() %>% as.character())
   
   png(paste0("plots/002_9.", i, "Volcano_plot_", name, "_shr.png"), h = 3500, w = 6500, res = 700)
   
-  labs <- plotres %>%
-    filter(abs(log2FoldChange) > 7 | padj < 1e-150) %>%
-    slice_max(order_by = -log10(padj)*abs(log2FoldChange), n = 15) %>% 
-    pull(rowname)
-    gglabs <- ifelse(plotres$rowname %in% c(goi, labs), 
-                     ifelse(plotres$rowname == "His1:CG33858", "", plotres$rowname), "")
+  # labs <- plotres %>%
+  #   filter(abs(log2FoldChange) > 7 | padj < 1e-150) %>%
+  #   slice_max(order_by = -log10(padj)*abs(log2FoldChange), n = 15) %>% 
+  #   pull(rowname)
+    gglabs <- ifelse(plotres$rowname %in% goi, plotres$rowname, "")
   
   p <- EnhancedVolcano(plotres, subtitle = "padj cutoff = 0.05 \nlog2FC cutoff = 1",
                        lab = "",
@@ -332,6 +340,8 @@ map(seq(1:length(shrRes)), function(i){
                        title = paste0('Differential expression in ', name),
                        pCutoff = 0.05, #0.05 cutoff
                        FCcutoff = 1,
+                       ylim = c(0, 50),
+                       xlim = c(-8, 8),
                        axisLabSize = 14,
                        titleLabSize = 14,
                        subtitleLabSize = 10,
@@ -352,18 +362,21 @@ map(seq(1:length(shrRes)), function(i){
                                           nrow()),
                        #selectLab = labs
   ) +
-     theme(plot.caption = element_text(hjust = 0.5)) +
+    
+    theme(plot.caption = element_text(hjust = 0.5)) +
     geom_text_repel(label = gglabs, 
                     size = 3.5,
                     min.segment.length = 0,
                     max.overlaps = Inf,
                     arrow = arrow(length = unit(0.015, "npc"), ends = "first", type = "closed"),
-                    ylim = c(10,300),
+                    ylim = c(0, 50),
                     #max.time = 5,
-                    box.padding = 0.7,
-                    point.padding = 0.1,
+                    box.padding = 0.3,
+                    point.padding = 0.2,
                     segment.size = 0.3,
-                    segment.color = "#00000070"
+                    segment.color = "#00000070",
+                    nudge_x = .15,
+                    segment.curvature = -1e-20
                     
     )
  

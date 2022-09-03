@@ -30,6 +30,7 @@ filter_lfc_sign <- function(res, sign) {
     filter(count == 3)
 }
 
+# Here we integrate padj associated to FC using Stouffer method
 gn_up <- filter_lfc_sign(res, 1)  # 6831 genes
 gn_dn <- filter_lfc_sign(res, -1) # 7206 genes
 
@@ -53,7 +54,6 @@ expratio <- assay(rld) %>%
   rownames_to_column("Dm_symbol") %>%
   inner_join(ort, by = c("Dm_symbol" = "FlyBaseID")) %>% 
   relocate(where(is.character))
-
 
 expsurv <- expratio %>% 
   left_join(surv_target, by = c("Human.Symbol" = "Symbol")) %>% 

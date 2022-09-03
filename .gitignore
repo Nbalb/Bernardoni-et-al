@@ -1,6 +1,8 @@
 # Data folder
 data/
 results/
+code/0xx*
+plots/0xx*
 
 # History files
 .Rhistory
