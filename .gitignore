@@ -26,6 +26,7 @@ plots/0xx*
 # RStudio files
 .Rproj.user/
 *.Rproj
+*.Rhistory
 
 # produced vignettes
 vignettes/*.html
