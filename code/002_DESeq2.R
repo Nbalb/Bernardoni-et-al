@@ -221,7 +221,7 @@ best_list <- map(seq(1:length(shrRes)), function(i, ngenes = 4){
   
   ord <- res %>% 
     filter(padj < 0.05) %>% 
-    arrange(-abs(log2FoldChange*-log10(padj))) %>% 
+    arrange(desc(abs(log2FoldChange))) %>% 
     slice_head(n = ngenes) %>% 
     bind_rows(res %>% filter(gene_name %in% c("nub", "pros", "sd", "vg")))
   
@@ -242,13 +242,13 @@ best_list <- map(seq(1:length(shrRes)), function(i, ngenes = 4){
       png(paste0("plots/002_7.", names(shrRes)[i], "_counts.png"), h = 2000, w = 4000, res = 600)
       
        p <-  ggplot(best, aes(x = gt, y = count, color = names)) +
-          scale_y_log10() +
           ggbeeswarm::geom_beeswarm(size = 3, cex = 3, alpha = 0.7) +
           facet_wrap(~gene_name, nrow = 2) +
           labs(title = paste0("Best DE genes and differentiation markers"),
                x = "Genotype",
                y = "Normalized counts") +
           scale_x_discrete(labels = function(x) str_replace(x, "_", "\n")) +
+          scale_y_log10(expand = expansion(mult = 0.1)) +
           theme(plot.title = element_text(hjust = 0.5))
        print(p)
       

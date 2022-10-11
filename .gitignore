@@ -2,7 +2,7 @@
 data/
 results/
 code/0xx*
-plots/0xx*
+plots/
 
 # History files
 .Rhistory
