@@ -8,7 +8,7 @@ library(DESeq2)
 library(tximeta)
 library(tidyverse)
 
-dir <- "../../../../linux/mycmax/salmon_alignments"
+dir <- "../../../linux/mycmax/salmon_alignments"
 
 files <- file.path(list.files(dir, "quant_orig_", full.names = T), "quant.sf")
 file.exists(files)
@@ -223,7 +223,7 @@ best_list <- map(seq(1:length(shrRes)), function(i, ngenes = 4){
     filter(padj < 0.05) %>% 
     arrange(desc(abs(log2FoldChange))) %>% 
     slice_head(n = ngenes) %>% 
-    bind_rows(res %>% filter(gene_name %in% c("nub", "pros", "sd", "vg")))
+    bind_rows(res %>% filter(gene_name %in% c("nub", "pros", "elav", "vg")))
   
   best <- ord %>%
     pull(gene_id) %>% 
@@ -255,8 +255,6 @@ best_list <- map(seq(1:length(shrRes)), function(i, ngenes = 4){
       dev.off()
       best
 })
-
-
 
 # Plot best scoring genes
 source("code/p_star.R")

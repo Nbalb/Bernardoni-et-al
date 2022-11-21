@@ -1,4 +1,5 @@
 library(DESeq2)
+library(patchwork)
 library(tidyverse)
 
 # Find target of Antp, Nub, Vg, Sd
@@ -130,4 +131,41 @@ for(i in unique(gint_fc$primary)){
 }
 
   
+# Single chart
+goi <- c("Antp", "nub", "vg", "sd")
+gint_sub <- gint |> 
+  filter(target_gn %in% goi | 
+         regulator_gn %in% goi) |> 
+  mutate(interactor = ifelse(target_gn %in% goi, regulator_gn, target_gn))
 
+res_tbl <- map_dfr(names(res), 
+                   ~as_tibble(res[[.x]], rownames = "gene_symbol") |> 
+                     mutate(contrast = .x)) 
+
+map(goi, function(x){
+  
+  gint_sub |> 
+    filter(target_gn == x | regulator_gn == x) |> 
+    inner_join(res_tbl, by = c("interactor" = "gene_symbol")) |> 
+    mutate(log2FoldChange = ifelse(padj > 0.05 | is.na(padj), 0, log2FoldChange)) |>  
+    group_by(interactor) |> 
+    mutate(mean_fc = mean(mean(log2FoldChange))) |> 
+    ungroup() |> 
+    filter(!(mean_fc == 0)) |> 
+    mutate(interactor = fct_reorder(interactor, log2FoldChange),
+           contrast = str_replace_all(contrast, "_", " ") |>
+             str_to_title() |> 
+             fct_rev()) |>  
+    ggplot(aes(x = log2FoldChange, y = interactor, fill = contrast)) +
+    geom_bar(stat = "identity", position = position_dodge(), color = "black") +
+    labs(title = paste0("Functional interactors of ", x, " expression"),
+         y = "Interactor") +
+    theme_light() +
+    scale_fill_brewer(name = "Contrast", palette = "Blues", breaks = c("Lmax Hmyc Vs Lmax",
+                                                                       "Lmax Hmyc Vs Neg",
+                                                                       "Lmax Vs Neg")) 
+    
+  
+}) |> 
+  wrap_plots(ncol = 2)
+ggsave("plots/006_Single_chart_interactors_expression.png", h = 2750, w = 3750, units = "px")
